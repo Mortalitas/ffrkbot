@@ -10,12 +10,15 @@ const botUtils = require(path.join(__dirname, 'common-bot-utils.js'));
 
 const enlirJsonPath = path.join(__dirname, '..', 'enlir_json');
 const enlirSoulbreaksPath = path.join(enlirJsonPath, 'soulbreaks.json');
+const enlirLimitbreaksPath = path.join(enlirJsonPath, 'limitbreaks.json');
 const enlirBsbCommandsPath = path.join(enlirJsonPath, 'bsbCommands.json');
 
 const enlirSoulbreaksFile = fs.readFileSync(enlirSoulbreaksPath);
+const enlirLimitbreaksFile = fs.readFileSync(enlirLimitbreaksPath);
 const enlirBsbCommandsFile = fs.readFileSync(enlirBsbCommandsPath);
 
 const enlirSoulbreaks = JSON.parse(enlirSoulbreaksFile);
+const enlirLimitbreaks = JSON.parse(enlirLimitbreaksFile);
 const enlirBsbCommands = JSON.parse(enlirBsbCommandsFile);
 
 /** searchSoulbreak:
@@ -85,7 +88,7 @@ function searchSoulbreak(character, sbType='all') {
  **/
 function checkSoulbreakFilter(sbType) {
   let possibleSbTypes = ['all', 'default', 'sb', 'ssb',
-    'bsb', 'usb', 'osb', 'csb', 'fsb', 'uosb', 'aosb', 'aasb', 'glint', 'glint+'];
+    'bsb', 'usb', 'osb', 'csb', 'fsb', 'uosb', 'aosb', 'aasb', 'glint', 'glint+', 'sasb', 'lbo', 'lbg', 'adsb'];
   if (possibleSbTypes.indexOf(sbType.toLowerCase()) === -1) {
     return false;
   } else {
@@ -125,7 +128,7 @@ function lookupSoulbreak(msg, character, sbType, filterIndex=null) {
       msg.channel.send(
         'Soulbreak type not one of: ' +
           'All, Default, SB, SSB, BSB, USB, OSB,' +
-          ' CSB, FSB, UOSB, Glint, AOSB, AASB.')
+          ' CSB, FSB, UOSB, Glint, AOSB, AASB, SASB. LBO, LBG, ADSB.')
         .then( (res) => {
           resolve(res);
         }).catch( (err) => {
@@ -385,6 +388,354 @@ function sendMessageEmbedSoulbreak(soulbreak, msg, dm=false, sbType='all') {
   });
 };
 
+/** searchLimitbreak:
+ * Searches and returns the limit breaks for a given character.
+ * @param {string} character: the name of the character to search.
+ * @param {string} sbType: The type of limit break to look up
+ *  (one of: lbo, lbg). Defaults to 'lbo'.
+ * @return {object} Promise: a Promise with a result if resolved.
+ **/
+function searchLimitbreak(character, lbType='all') {
+  console.log(`Character to lookup: ${character}`);
+  console.log(`Limit break to return: ${lbType}`);
+  character = escapeStringRegexp(character);
+  // Backwards-compatibility with pre-localized fsb/uosb.
+  if (lbType === 'fsb') {
+    lbType = 'glint';
+  }
+  if (lbType === 'uosb') {
+    lbType = 'asb';
+  }
+  let characterQueryString = util.format('[*character~/^%s$/i]', character);
+  console.log(`characterQueryString: ${characterQueryString}`);
+  return new Promise( (resolve, reject) => {
+    try {
+      let result;
+      result = jsonQuery(characterQueryString, {
+        data: enlirLimitbreaks,
+        allowRegexp: true,
+      });
+      if (result.value.length === 0) {
+        console.log(`No results found for ${character}, trying LB query.`);
+        characterQueryString = util.format('[*name~/%s/i]', character);
+        console.log(`characterQueryString lb search: ${characterQueryString}`);
+        result = jsonQuery(characterQueryString, {
+          data: enlirLimitbreaks,
+          allowRegexp: true,
+        });
+        if (result.value.length === 0) {
+          console.log('No results found.');
+          resolve(result);
+        };
+      };
+      if (lbType.toLowerCase() !== 'all') {
+        let dataset = result.value;
+        lbType = escapeStringRegexp(lbType);
+        let tierQueryString = util.format('[*tier~/^%s/i]', lbType);
+        console.log(`tierQueryString: ${tierQueryString}`);
+        result = jsonQuery(tierQueryString, {
+          data: dataset,
+          allowRegexp: true,
+        });
+      };
+      console.log(`Returning results: ${result.value.length}`);
+      resolve(result);
+    } catch (error) {
+      console.log(`Error in searchLimitbreak: ${error}`);
+      reject(error);
+    };
+  });
+};
+/** checkLimitbreakFilter:
+ *  Checks the limitbreak filter to see if it is a valid limitbreak type.
+ *  @param {String} lbType: The limitbreak filter to check.
+ *  @return {Boolean}: Valid or invalid liitbreak.
+ **/
+function checkLimitbreakFilter(lbType) {
+  let possibleLbTypes = ['lbo', 'lbg'];
+  if (possibleLbTypes.indexOf(lbType.toLowerCase()) === -1) {
+    return false;
+  } else {
+    return true;
+  };
+};
+/** lookupLimitbreak:
+ *  Runs searchLimitbreak to find a limit break for a given character.
+ *  @param {Object} msg: A message object from the Discord.js bot.
+ *  @param {String} character: the name of the character to search.
+ *  @param {String} lbType: the type of limit break to search.
+ *    (one of: lbo, lbg. Defaults to 'lbo'.)
+ * @param {number} filterIndex: The index of the limitbreak to search for.
+ * Savvy players can use this to refer to limitbreaks by number in approximate
+ * release order, ie bsb1, asb1, glint2. Defaults to null so everything is
+ * returned.
+ *  @return {object} Promise
+ **/
+function lookupLimitbreak(msg, character, lbType, filterIndex=null) {
+  console.log(util.format(',lb caller: %s#%s',
+    msg.author.username, msg.author.discriminator));
+  console.log(`Lookup called: ${character} ${lbType} ${filterIndex}`);
+  return new Promise( (resolve, reject) => {
+    if (character.length < 2) {
+      msg.channel.send(
+        'Character name must be at least two characters.')
+        .then( (res) => {
+          resolve(res);
+        }).catch( (err) => {
+          reject(err);
+        });
+      return;
+    };
+    if (checkLimitbreakFilter(lbType) === false) {
+      msg.channel.send(
+        'Limitbreak type not one of: ' +
+          'LBO, LBG.')
+        .then( (res) => {
+          resolve(res);
+        }).catch( (err) => {
+          reject(err);
+        });
+      return;
+    };
+    console.log(`Alias check: ${botUtils.checkAlias(character)}`);
+    if (botUtils.checkAlias(character) != null) {
+      character = botUtils.checkAlias(character);
+    };
+    searchLimitbreak(character, lbType).then( (res) => {
+      character = titlecase.toLaxTitleCase(character);
+      if (res.value.length === 0) {
+        msg.channel.send(`No results for '${character}' '${lbType}'.`)
+        .then( (res) => {
+          resolve(res);
+        }).catch( (err) => {
+          reject(err);
+        });
+        return;
+      };
+      let dm = false;
+      let values = [];
+      res.value.forEach( (value) => {
+        values.push(value);
+      });
+      // If only one result from values, set lbType to the tier of the
+      // the returned limitbreak.
+      if (values.length === 1) {
+        lbType = values[0].tier;
+      }
+      // Discord embed does not allow over 25 fields. Fail out if over 20
+      // results.
+      if (values.length > 20) {
+        console.log('Over 20 results returned, informing user.');
+        msg.channel.send(`Over 20 results for '${character}.' Please` +
+        ` refine your search.`)
+        .then( (res) => {
+          resolve(res);
+        }).catch( (err) => {
+          reject(err);
+        });
+      }
+      if (lbType === 'all') {
+        console.log(`sending limitbreak summary`);
+        sendLimitbreakMessageEmbedSummary(values, msg)
+          .then( (res) => {
+            resolve(res);
+          }).catch( (err) => {
+            console.log(`Error sending MessageEmbed summary ${err}`);
+            console.log(`Sending plaintext summary instead.`);
+            sendLimitbreakPlaintextSummary(values, msg)
+              .then( (res) => {
+                resolve(res);
+              }).catch( (err) => {
+                console.log(`Error sending plaintext summary as well: ${err}`);
+                reject(err);
+            });
+        });
+      } else {
+        if (filterIndex) {
+          // Make a filterIndexActual because arrays start from 0.
+          let filterIndexActual;
+          filterIndexActual = Math.abs(filterIndex) - 1;
+          if (filterIndexActual < 0) {
+            filterIndexActual = 0;
+          }
+          console.log(filterIndexActual);
+          let value = values[filterIndexActual];
+          if (value === undefined) {
+            let err = `${lbType}${filterIndex} not found for ${character}.`;
+            err += ` Giving you all of ${character}'s ${lbType} instead.`;
+            msg.channel.send(err)
+              .then( () => {
+              }).catch( (err) => {
+                console.log(`Error sending error about unfound filterIndex.`);
+            });
+          } else {
+            values = [];
+            values.push(value);
+          }
+        }
+        values.forEach( (value) => {
+          sendMessageEmbedLimitbreak(value, msg, dm, lbType).then( (result) => {
+            result.forEach( (embed) => {
+              msg.channel.send(embed)
+                .then( () => {
+                }).catch( (err) => {
+                console.log(`Error calling sendMessageEmbedLimitbreak: ${err}`);
+              });
+            });
+          }).catch( () => {
+            console.log(`Attempting to call plaintext limitbreak instead.`);
+            processLimitbreak(value, msg, dm, character, lbType);
+          });
+          resolve();
+        });
+      };
+    });
+  });
+};
+/** checkLimitbreaksBelongToOne:
+* checks to see if a list of limitbreaks belongs to one character.
+* @param {object} limitbreaks: an array of limitbreaks.
+* @param {string} character: the character to check against.
+* @return {boolean}: limitbreaks either belong or don't belong to that character.
+**/
+function checkLimitbreaksBelongToOne(limitbreaks, character) {
+  let check = true;
+  limitbreaks.forEach( (limitbreak) => {
+    if (limitbreak.character !== character) {
+      check = false;
+    };
+  });
+  return check;
+};
+/** sendLimitbreakMessageEmbedSummary:
+ * Sends a summary of a character's limitbreaks as a MessageEmbed object.
+ * @param {array} limitbreaks: an array of limitbreaks.
+ * @param {object} msg: the discord.js-commando message object.
+ * @return {object} Promise
+ **/
+function sendLimitbreakMessageEmbedSummary(limitbreaks, msg) {
+  let character = limitbreaks[0].character;
+  let description = 'SOULBREAK SUMMARY (use filters for details)';
+  let embed;
+  if (checkLimitbreaksBelongToOne(limitbreaks, character) === true) {
+    embed = new MessageEmbed()
+      .setTitle(character)
+      .setDescription(description)
+      .setColor('#f44242');
+    limitbreaks.forEach( (limitbreak) => {
+      let name = limitbreak.name;
+      let description = botUtils.returnDescription(limitbreak);
+      let tier = limitbreak.tier;
+      let relic = limitbreak.relic;
+      let nameField = util.format('%s (%s) {Relic: %s}', name, tier, relic);
+      embed.addField(nameField, description);
+    });
+    } else {
+    embed = new MessageEmbed()
+      .setTitle(description)
+      .setColor('#f44242');
+    soulbreaks.forEach( (soulbreak) => {
+      let character = limitbreak.character;
+      let name = limitbreak.name;
+      let description = botUtils.returnDescription(limitbreak);
+      let tier = limitbreak.tier;
+      let relic = limitbreak.relic;
+      let nameField = util.format(
+        '%s: %s (%s) {Relic: %s}', character, name, tier, relic);
+      embed.addField(nameField, description);
+    });
+    };
+  return new Promise( (resolve, reject) => {
+    msg.channel.send({embed})
+      .then( (res) => {
+        resolve(res);
+      }).catch( (error) => {
+        console.log(`Couldn't send MessageEmbed soulbreak summary: ${error}`);
+        reject(error);
+    });
+  });
+};
+/** sendLimitbreakPlaintextSummary:
+ * Sends a summary of a character's limitbreaks.
+ * @param {array} soulbreaks: an array of limitbreaks.
+ * @param {object} msg: the discord.js-commando message object.
+ * @return {object} Promise
+ **/
+function sendLimitbreakPlaintextSummary(limitbreaks, msg) {
+  let message = '**```\n';
+  let character = limitbreaks[0].character;
+  message = message + character + '\n';
+  message = message +
+    'LIMITBREAK SUMMARY (use filters for details)\n\n';
+  limitbreaks.forEach( (limitbreak) => {
+    let name = limitbreak.name;
+    let description = botUtils.returnDescription(limitbreak);
+    let tier = limitbreak.tier;
+    let relic = limitbreak.relic;
+    let nameMsg = name;
+    let descMsg = description;
+    let tierMsg = util.format('(%s)', tier);
+    let relicMsg = util.format('{Relic: %s}', relic);
+    nameMsg = util.format('%s %s %s\n', nameMsg, tierMsg, relicMsg);
+    descMsg = descMsg + '\n';
+    message = message + nameMsg + descMsg + '\n';
+  });
+  message = message + '```**';
+  return new Promise( (resolve, reject) => {
+    msg.channel.send(message)
+      .then( (res) => {
+        resolve(res);
+      }).catch( (error) => {
+        console.log(`Couldn't send plaintext limitbreak summary: ${error}`);
+        reject(error);
+    });
+  });
+};
+/** sendMessageEmbedLimitbreak:
+ * Processes and outputs information about a limitbreak in MessageEmbed format.
+ * @param {object} limitbreak: each value from lookupLimitbreak results.
+ * @param {object} msg: Discord.js-commando message object.
+ * @param {boolean} dm: whether to DM the user.
+ * @param {string} sbType: the SB to filter and display.
+ * @return {object} Promise
+ **/
+function sendMessageEmbedLimitbreak(limitbreak, msg, dm=false, lbType='all') {
+  let embeds = [];
+  let name = limitbreak.name;
+  let description = botUtils.returnDescription(limitbreak);
+  let multiplier = botUtils.returnMultiplier(limitbreak);
+  let element = botUtils.returnElement(limitbreak);
+  let character = limitbreak.character;
+  let relic = limitbreak.relic;
+  let title = util.format('%s: %s {Relic: %s}', character, name, relic);
+  let skillType = limitbreak.type;
+  let castTime = limitbreak.time;
+  let target = limitbreak.target;
+  let lbTier = limitbreak.tier;
+  let lbImage = botUtils.returnImageLink(limitbreak, 'soulstrike');
+  let embed = new MessageEmbed()
+    .setTitle(title)
+    .setDescription(description)
+    .setColor('#53ddff')
+    .setThumbnail(lbImage)
+    .addField('**Type**', skillType, true)
+    .addField('**Element**', element, true)
+    .addField('**Target**', target, true)
+    .addField('**Multiplier**', multiplier, true)
+    .addField('**Cast Time**', castTime, true);
+  if (lbType !== 'all') {
+    embed.addField('**Limit Break Type**', lbTier, true);
+  };
+  embeds.push({embed});
+  return new Promise( (resolve, reject) => {
+    try {
+      resolve(embeds);
+    } catch (err) {
+      console.log(`Error in sendMessageEmbedLimitbreak, error: ${err}`);
+      reject(err);
+    };
+  });
+};
 
 /** processMessageEmbedBsb:
  * Adds BSB commands to an embed message.
@@ -531,17 +882,65 @@ function processSoulbreak(soulbreak, msg, dm=false, character, sbType='all') {
   };
 };
 
+/** processLimitbreak:
+ * Takes JSON about a limitbreak and outputs info in plaintext.
+ * @param {object} limitbreak: a JSON dict returned from searchLimitbreak.
+ * @param {object} msg: a discord.js-commando Message object.
+ * @param {boolean} dm: Whether to DM the user the information.
+ * @param {string} character: the character to search.
+ * @param {string} lbType: The limitbreak filter to use.
+ **/
+function processLimitbreak(limitbreak, msg, dm=false, character, lbType='all') {
+  console.log(`dm: ${dm}`);
+  let name = limitbreak.name;
+  let element = botUtils.returnElement(limitbreak);
+  let relic = limitbreak.relic;
+  let pad = 22;
+  let skillType = limitbreak.type;
+  let target = limitbreak.target;
+  let castTime = limitbreak.time;
+  let multiplier = botUtils.returnMultiplier(limitbreak);
+  let lbTier = limitbreak.tier;
+  let typeMsg = botUtils.returnPropertyString(
+    skillType, 'Type', pad);
+  let elementMsg = botUtils.returnPropertyString(element, 'Element');
+  let targetMsg = botUtils.returnPropertyString(
+    target, 'Target', pad);
+  let multiplierMsg = botUtils.returnPropertyString(
+    multiplier, 'Multiplier');
+  let castMsg = botUtils.returnPropertyString(
+    castTime, 'Cast Time', pad);
+  let lbMsg = botUtils.returnPropertyString(lbTier, 'Limit Break Type');
+  let castAndSbMsg = util.format('%s\n', castMsg);
+  let description = botUtils.returnDescription(limitbreak);
+  let message = (
+    '**```\n' +
+    util.format('%s: %s {Relic: %s}\n', character, name, relic) +
+    util.format('%s\n', description) +
+    util.format('%s || %s\n', typeMsg, elementMsg) +
+    util.format('%s || %s\n', targetMsg, multiplierMsg) +
+    castAndSbMsg
+    );
+  message = message + '```**';
+  if (dm === true) {
+    console.log(`msg.author: ${msg.author}`);
+    msg.author.send(message);
+  } else {
+    msg.channel.send(message);
+  };
+};
+
 /** processBsb:
  * Takes a BSB command and outputs a message block for it.
  * @param {object} bsbCommand: a JSON dict for a BSB command.
  * @param {string} message: Passed from processSoulbreak, the
  *  current version of the message with entry effects and
  *  SB attributes.
- * @param {string} sbType: the soul break filter.
+ * @param {string} lbType: the soul break filter.
  * @return {string} message: the complete message including
  *  the attributes for the soul break commands.
  **/
-function processBsb(bsbCommand, message=null, sbType='all') {
+function processBsb(bsbCommand, message=null, lbType='all') {
   let command = bsbCommand.name;
   console.log(`Command ${command} found.`);
   let target = bsbCommand.target;
@@ -584,4 +983,10 @@ module.exports = {
   searchSoulbreak: searchSoulbreak,
   sendSoulbreakPlaintextSummary: sendSoulbreakPlaintextSummary,
   checkSoulbreaksBelongToOne: checkSoulbreaksBelongToOne,
+
+  sendLimitbreakMessageEmbedSummary: sendLimitbreakMessageEmbedSummary,
+  limitbreak: lookupLimitbreak,
+  searchLimitbreak: searchLimitbreak,
+  sendLimitbreakPlaintextSummary: sendLimitbreakPlaintextSummary,
+  checkLimitbreaksBelongToOne: checkLimitbreaksBelongToOne,
 };
