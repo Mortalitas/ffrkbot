@@ -1,5 +1,5 @@
 const util = require('util');
-const {RichEmbed} = require('discord.js');
+const {MessageEmbed} = require('discord.js');
 const jsonQuery = require('json-query');
 const escapeStringRegexp = require('escape-string-regexp');
 const titleCase = require('titlecase');
@@ -50,20 +50,20 @@ exports.other = function lookupOtherSpreadsheet(msg, args) {
   if (result.value === null) {
     msg.channel.send(`Search for ${query} not found.`);
   } else {
-    sendRichEmbedOther(result, msg)
+    sendMessageEmbedOther(result, msg)
       .catch( (err) => {
-        console.log(`Error with sendRichEmbedOther: ${err}`);
+        console.log(`Error with sendMessageEmbedOther: ${err}`);
     });
   };
 };
-/** sendRichEmbedOther:
+/** sendMessageEmbedOther:
  * Processes and outputs information about a status effect in
- * RichEmbed format.
+ * MessageEmbed format.
  * @param {object} result: the result from lookupentry.
  * @param {object} msg: discord.js message object.
  * @return {object} Promise
  **/
-function sendRichEmbedOther(result, msg) {
+function sendMessageEmbedOther(result, msg) {
   return new Promise( (fulfill, reject) => {
     entry = result.value;
     let description = (entry.effects !== undefined) ?
@@ -75,7 +75,7 @@ function sendRichEmbedOther(result, msg) {
     let target = entry.target;
 	let element = entry.element;
 	let school = entry.school;
-    let embed = new RichEmbed()
+    let embed = new MessageEmbed()
       .setTitle(name)
       .setDescription(description)
       .setColor('#bfdaff')
@@ -88,7 +88,7 @@ function sendRichEmbedOther(result, msg) {
       .then( (resolve) => {
         fulfill(resolve);
       }).catch( (error) => {
-        console.log(`Error in sendRichEmbedentry: ${error}`);
+        console.log(`Error in sendMessageEmbedentry: ${error}`);
         reject(error);
       });
   });

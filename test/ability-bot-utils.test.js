@@ -29,10 +29,10 @@ describe('ability', () => {
   describe('lookupAbility', () => {
     beforeEach( () => {
       sandbox = sinon.sandbox.create();
-      stubEmbed = sandbox.stub(botUtils, 'sendRichEmbedAbility');
+      stubEmbed = sandbox.stub(botUtils, 'sendMessageEmbedAbility');
       stubPlaintext = sandbox.stub(botUtils, 'processAbility');
       botUtils.__set__({
-        'sendRichEmbedAbility': stubEmbed,
+        'sendMessageEmbedAbility': stubEmbed,
         'processAbility': stubPlaintext,
       });
     });
@@ -40,16 +40,16 @@ describe('ability', () => {
       sandbox.restore();
     });
     let args = 'waterga';
-    it('should call sendRichEmbedAbility', () => {
+    it('should call sendMessageEmbedAbility', () => {
       stubEmbed.resolves(null);
       botUtils.ability(msg, args).then( () => {
         assert.equal(stubEmbed.calledOnce, true,
-          'sendRichEmbedAbility was called once');
+          'sendMessageEmbedAbility was called once');
         assert.equal(stubPlaintext.notCalled, true,
           'processAbility should not be called');
       });
     });
-    it('should call processAbility when sendRichEmbedAbility fails', () => {
+    it('should call processAbility when sendMessageEmbedAbility fails', () => {
           stubEmbed.rejects(null);
           botUtils.ability(msg, args)
             .then( () => {
@@ -60,19 +60,19 @@ describe('ability', () => {
             });
         });
   });
-  describe('sendRichEmbedAbility', () => {
-    it('Should construct and send a RichEmbedAbility', () => {
+  describe('sendMessageEmbedAbility', () => {
+    it('Should construct and send a MessageEmbedAbility', () => {
       let query = 'waterga';
       let queryString = util.format('[name~/%s/i]', query);
       let result = jsonQuery(queryString, {
         data: enlirAbilities,
         allowRegexp: true,
       });
-      return botUtils.sendRichEmbedAbility(result, msg)
+      return botUtils.sendMessageEmbedAbility(result, msg)
         .then( (res) => {
-          assert.equal(res, null, 'sendRichEmbedAbility succeeded');
+          assert.equal(res, null, 'sendMessageEmbedAbility succeeded');
         }).catch( (err) => {
-          assert.fail(err, null, `sendRichEmbedAbility should return null,` +
+          assert.fail(err, null, `sendMessageEmbedAbility should return null,` +
             ` but we got ${err}`);
         });
     });

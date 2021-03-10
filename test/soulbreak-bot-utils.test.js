@@ -30,8 +30,8 @@ describe('soulbreak bot utils testing', () => {
       let query = 'cloud';
       let sbType = 'all';
       soulbreakSummarySpy = sandbox.spy(botUtils,
-        'sendSoulbreakRichEmbedSummary');
-      botUtils.__set__('sendSoulbreakRichEmbedSummary',
+        'sendSoulbreakMessageEmbedSummary');
+      botUtils.__set__('sendSoulbreakMessageEmbedSummary',
         soulbreakSummarySpy);
       return botUtils.soulbreak(msg, query, sbType).then( () => {
         assert.equal(soulbreakSummarySpy.calledOnce, true);
@@ -43,11 +43,11 @@ describe('soulbreak bot utils testing', () => {
           let query = 'tifa';
           let sbType = 'all';
           soulbreakSummarySpy = sandbox.spy(botUtils,
-            'sendSoulbreakRichEmbedSummary');
+            'sendSoulbreakMessageEmbedSummary');
           soulbreakPlaintextSpy = sandbox.spy(botUtils,
             'sendSoulbreakPlaintextSummary');
           botUtils.__set__({
-            'sendSoulbreakRichEmbedSummary': soulbreakSummarySpy,
+            'sendSoulbreakMessageEmbedSummary': soulbreakSummarySpy,
             'sendSoulbreakPlaintextSummary': soulbreakPlaintextSpy,
           });
           return botUtils.soulbreak(msg, query, sbType).catch( () => {
@@ -84,7 +84,7 @@ describe('soulbreak bot utils testing', () => {
         assert.equal(msg.channel.send.calledWith(message), true);
       });
     });
-    it('should send one RichEmbed for a default soulbreak', () => {
+    it('should send one MessageEmbed for a default soulbreak', () => {
       let query = 'tifa';
       msg.channel.send = sandbox.stub().resolves(null);
       return botUtils.soulbreak(msg, query, 'default').then( () => {

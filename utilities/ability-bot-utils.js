@@ -1,5 +1,5 @@
 const util = require('util');
-const {RichEmbed} = require('discord.js');
+const {MessageEmbed} = require('discord.js');
 const path = require('path');
 const jsonQuery = require('json-query');
 const titlecase = require('titlecase');
@@ -44,11 +44,11 @@ function lookupAbility(msg, args) {
     msg.channel.send(`Ability '${query}' not found.`);
   } else {
     return new Promise( (resolve, reject) => {
-      sendRichEmbedAbility(result, msg)
+      sendMessageEmbedAbility(result, msg)
         .then( (res) => {
           resolve(res);
         }).catch( (err) => {
-          console.log(`Failed to call sendRichEmbedAbility, using plaintext`);
+          console.log(`Failed to call sendMessageEmbedAbility, using plaintext`);
           try {
             processAbility(result, msg);
             resolve(err);
@@ -91,13 +91,13 @@ function processAbility(result, msg) {
     );
   msg.channel.send(message);
 };
-/** sendRichEmbedAbility:
- * Processes and outputs information about an ability in RichEmbed format.
+/** sendRichEmbMessageEmbedAbility:
+ * Processes and outputs information about an ability in MessageEmbed format.
  * @param {object} result: the result from lookupAbility.
  * @param {object} msg: Discord.js-command message object.
  * @return {object} Promise
  **/
-function sendRichEmbedAbility(result, msg) {
+function sendMessageEmbedAbility(result, msg) {
   ability = result.value;
   let description = botUtils.returnDescription(ability);
   let multiplier = botUtils.returnMultiplier(ability);
@@ -107,7 +107,7 @@ function sendRichEmbedAbility(result, msg) {
   let castTime = ability.time;
   let sbCharge = ability.sb;
   let sbImage = botUtils.returnImageLink(ability, 'ability');
-  let embed = new RichEmbed()
+  let embed = new MessageEmbed()
     .setTitle(ability.name)
     .setDescription(description)
     .setColor('#53ddff')
@@ -123,14 +123,14 @@ function sendRichEmbedAbility(result, msg) {
       .then( (resolve) => {
         res(resolve);
       }).catch( (error) => {
-        console.log(`error in sendRichEmbedAbility: ${error}`);
+        console.log(`error in sendMessageEmbedAbility: ${error}`);
         err(error);
       });
   });
 };
 
 module.exports = {
-  sendRichEmbedAbility: sendRichEmbedAbility,
+  sendMessageEmbedAbility: sendMessageEmbedAbility,
   ability: lookupAbility,
   processAbility: processAbility,
 };

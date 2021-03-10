@@ -1,5 +1,5 @@
 const util = require('util');
-const {RichEmbed} = require('discord.js');
+const {MessageEmbed} = require('discord.js');
 const jsonQuery = require('json-query');
 const escapeStringRegexp = require('escape-string-regexp');
 const titlecase = require('titlecase');
@@ -47,9 +47,9 @@ exports.status = function lookupStatus(msg, args, data=enlirModifiedStatus) {
   if (result.value === null) {
     msg.channel.send(`Status ${query} not found.`);
   } else {
-    sendRichEmbedStatus(result, msg)
+    sendMessageEmbedStatus(result, msg)
       .catch( (err) => {
-        console.log(`Error with sendRichEmbedStatus: ${err}`);
+        console.log(`Error with sendMessageEmbedStatus: ${err}`);
       });
   };
 };
@@ -77,14 +77,14 @@ exports.status = function lookupStatus(msg, args, data=enlirModifiedStatus) {
    return enlirStatus;
  };
 
-/** sendRichEmbedStatus:
+/** sendMessageEmbedStatus:
  * Processes and outputs information about a status effect in
- * RichEmbed format.
+ * MessageEmbed format.
  * @param {object} result: the result from lookupStatus.
  * @param {object} msg: discord.js message object.
  * @return {object} Promise
  **/
-function sendRichEmbedStatus(result, msg) {
+function sendMessageEmbedStatus(result, msg) {
   return new Promise( (fulfill, reject) => {
     statusEffect = result.value;
     let description = (statusEffect.effects !== undefined) ?
@@ -108,7 +108,7 @@ function sendRichEmbedStatus(result, msg) {
     let notes = botUtils.returnNotes(statusEffect);
     let embed;
     if (notes !== undefined) {
-      embed = new RichEmbed()
+      embed = new MessageEmbed()
         .setTitle(name)
         .setDescription(description)
         .setColor('#8c42f4')
@@ -117,7 +117,7 @@ function sendRichEmbedStatus(result, msg) {
         .addField('Mutually-exclusive status effects', exclusiveStatus)
         .addField('Additional notes', notes);
     } else {
-      embed = new RichEmbed()
+      embed = new MessageEmbed()
         .setTitle(name)
         .setDescription(description)
         .setColor('#8c42f4')
@@ -129,7 +129,7 @@ function sendRichEmbedStatus(result, msg) {
       .then( (resolve) => {
         fulfill(resolve);
       }).catch( (error) => {
-        console.log(`Error in sendRichEmbedStatus: ${error}`);
+        console.log(`Error in sendMessageEmbedStatus: ${error}`);
         reject(error);
       });
   });

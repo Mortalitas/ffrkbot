@@ -1,5 +1,5 @@
 const util = require('util');
-const {RichEmbed} = require('discord.js');
+const {MessageEmbed} = require('discord.js');
 const jsonQuery = require('json-query');
 const escapeStringRegexp = require('escape-string-regexp');
 const titlecase = require('titlecase');
@@ -55,9 +55,9 @@ exports.legendMateria = function lookupLegendMateria(msg, args) {
       let lm = {
         value,
       };
-      sendRichEmbedLegendMateria(lm, msg)
+      sendMessageEmbedLegendMateria(lm, msg)
         .catch( (err) => {
-          console.log(`Error with sendRichEmbedLegendMateria: ${err}`);
+          console.log(`Error with sendMessageEmbedLegendMateria: ${err}`);
       });
     });
   } else if (result.value.length > 20) {
@@ -78,7 +78,7 @@ exports.legendMateria = function lookupLegendMateria(msg, args) {
 **/
 exports.createLegendMateriaSummary =
 function createLegendMateriaSummary(results) {
-  let embed = new RichEmbed()
+  let embed = new MessageEmbed()
     .setTitle('Legend Materia Search Results')
     .setDescription('Search by legend materia name for more details')
     .setColor('#bfdaff');
@@ -95,14 +95,14 @@ function createLegendMateriaSummary(results) {
   });
   return embed;
 };
-/** sendRichEmbedLegendMateria:
+/** sendMessageEmbedLegendMateria:
  * Processes and outputs information about a status effect in
- * RichEmbed format.
+ * MessageEmbed format.
  * @param {object} result: the result from lookupLegendMateria.
  * @param {object} msg: discord.js message object.
  * @return {object} Promise
  **/
-function sendRichEmbedLegendMateria(result, msg) {
+function sendMessageEmbedLegendMateria(result, msg) {
   return new Promise( (fulfill, reject) => {
     legendMateria = result.value;
     let description = (legendMateria.effect !== undefined) ?
@@ -113,7 +113,7 @@ function sendRichEmbedLegendMateria(result, msg) {
       (legendMateria.master) : 'N/A';
     let relic = legendMateria.relic;
     let realm = legendMateria.realm;
-    let embed = new RichEmbed()
+    let embed = new MessageEmbed()
       .setTitle(name)
       .setDescription(description)
       .setColor('#f7e62c')
@@ -125,7 +125,7 @@ function sendRichEmbedLegendMateria(result, msg) {
       .then( (resolve) => {
         fulfill(resolve);
       }).catch( (error) => {
-        console.log(`Error in sendRichEmbedLegendMateria: ${error}`);
+        console.log(`Error in sendMessageEmbedLegendMateria: ${error}`);
         reject(error);
       });
   });

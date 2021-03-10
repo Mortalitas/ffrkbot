@@ -1,5 +1,5 @@
 const util = require('util');
-const {RichEmbed} = require('discord.js');
+const {MessageEmbed} = require('discord.js');
 const jsonQuery = require('json-query');
 const escapeStringRegexp = require('escape-string-regexp');
 
@@ -51,15 +51,15 @@ exports.recordMateria = function lookupRecordMateria(msg, args) {
     msg.channel.send(`Search for ${query} not found.`);
   } else if (result.value.length === 1) {
     result.value.forEach( (value) => {
-      // sendRichEmbedRecordMateria expects a single result with a .value
+      // sendMessageEmbedRecordMateria expects a single result with a .value
       // property so we create a new Object and set its .value to each result's
       // .value
       let rm = {
         value,
       };
-      sendRichEmbedRecordMateria(rm, msg)
+      sendMessageEmbedRecordMateria(rm, msg)
         .catch( (err) => {
-          console.log(`Error with sendRichEmbedRecordMateria: ${err}`);
+          console.log(`Error with sendMessageEmbedRecordMateria: ${err}`);
       });
     });
   } else if (result.value.length > 20) {
@@ -81,7 +81,7 @@ exports.recordMateria = function lookupRecordMateria(msg, args) {
 **/
 exports.createRecordMateriaSummary =
 function createRecordMateriaSummary(results) {
-  let embed = new RichEmbed()
+  let embed = new MessageEmbed()
     .setTitle('Record Materia Search Results')
     .setDescription('Search by record materia name for more details')
     .setColor('#bfdaff');
@@ -97,14 +97,14 @@ function createRecordMateriaSummary(results) {
   });
   return embed;
 };
-/** sendRichEmbedRecordMateria:
+/** sendMessageEmbedRecordMateria:
  * Processes and outputs information about a status effect in
- * RichEmbed format.
+ * MessageEmbed format.
  * @param {object} result: the result from lookupRecordMateria.
  * @param {object} msg: discord.js message object.
  * @return {object} Promise
  **/
-function sendRichEmbedRecordMateria(result, msg) {
+function sendMessageEmbedRecordMateria(result, msg) {
   return new Promise( (fulfill, reject) => {
     recordMateria = result.value;
     let description = (recordMateria.effect !== undefined) ?
@@ -113,7 +113,7 @@ function sendRichEmbedRecordMateria(result, msg) {
     let character = recordMateria.character;
     let unlock = recordMateria.unlockCriteria;
     let realm = recordMateria.realm;
-    let embed = new RichEmbed()
+    let embed = new MessageEmbed()
       .setTitle(name)
       .setDescription(description)
       .setColor('#bfdaff')
@@ -124,7 +124,7 @@ function sendRichEmbedRecordMateria(result, msg) {
       .then( (resolve) => {
         fulfill(resolve);
       }).catch( (error) => {
-        console.log(`Error in sendRichEmbedRecordMateria: ${error}`);
+        console.log(`Error in sendMessageEmbedRecordMateria: ${error}`);
         reject(error);
       });
   });

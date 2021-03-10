@@ -1,5 +1,5 @@
 const util = require('util');
-const {RichEmbed} = require('discord.js');
+const {MessageEmbed} = require('discord.js');
 const jsonQuery = require('json-query');
 const titlecase = require('titlecase');
 const escapeStringRegexp = require('escape-string-regexp');
@@ -172,11 +172,11 @@ function lookupSoulbreak(msg, character, sbType, filterIndex=null) {
       }
       if (sbType === 'all') {
         console.log(`sending soulbreak summary`);
-        sendSoulbreakRichEmbedSummary(values, msg)
+        sendSoulbreakMessageEmbedSummary(values, msg)
           .then( (res) => {
             resolve(res);
           }).catch( (err) => {
-            console.log(`Error sending richEmbed summary ${err}`);
+            console.log(`Error sending MessageEmbed summary ${err}`);
             console.log(`Sending plaintext summary instead.`);
             sendSoulbreakPlaintextSummary(values, msg)
               .then( (res) => {
@@ -210,12 +210,12 @@ function lookupSoulbreak(msg, character, sbType, filterIndex=null) {
           }
         }
         values.forEach( (value) => {
-          sendRichEmbedSoulbreak(value, msg, dm, sbType).then( (result) => {
+          sendMessageEmbedSoulbreak(value, msg, dm, sbType).then( (result) => {
             result.forEach( (embed) => {
               msg.channel.send(embed)
                 .then( () => {
                 }).catch( (err) => {
-                console.log(`Error calling sendRichEmbedSoulbreak: ${err}`);
+                console.log(`Error calling sendMessageEmbedSoulbreak: ${err}`);
               });
             });
           }).catch( () => {
@@ -243,18 +243,18 @@ function checkSoulbreaksBelongToOne(soulbreaks, character) {
   });
   return check;
 };
-/** sendSoulbreakRichEmbedSummary:
- * Sends a summary of a character's soulbreaks as a RichEmbed object.
+/** sendSoulbreakMessageEmbedSummary:
+ * Sends a summary of a character's soulbreaks as a MessageEmbed object.
  * @param {array} soulbreaks: an array of soulbreaks.
  * @param {object} msg: the discord.js-commando message object.
  * @return {object} Promise
  **/
-function sendSoulbreakRichEmbedSummary(soulbreaks, msg) {
+function sendSoulbreakMessageEmbedSummary(soulbreaks, msg) {
   let character = soulbreaks[0].character;
   let description = 'SOULBREAK SUMMARY (use filters for details)';
   let embed;
   if (checkSoulbreaksBelongToOne(soulbreaks, character) === true) {
-    embed = new RichEmbed()
+    embed = new MessageEmbed()
       .setTitle(character)
       .setDescription(description)
       .setColor('#f44242');
@@ -267,7 +267,7 @@ function sendSoulbreakRichEmbedSummary(soulbreaks, msg) {
       embed.addField(nameField, description);
     });
     } else {
-    embed = new RichEmbed()
+    embed = new MessageEmbed()
       .setTitle(description)
       .setColor('#f44242');
     soulbreaks.forEach( (soulbreak) => {
@@ -286,7 +286,7 @@ function sendSoulbreakRichEmbedSummary(soulbreaks, msg) {
       .then( (res) => {
         resolve(res);
       }).catch( (error) => {
-        console.log(`Couldn't send RichEmbed soulbreak summary: ${error}`);
+        console.log(`Couldn't send MessageEmbed soulbreak summary: ${error}`);
         reject(error);
     });
   });
@@ -327,15 +327,15 @@ function sendSoulbreakPlaintextSummary(soulbreaks, msg) {
     });
   });
 };
-/** sendRichEmbedSoulbreak:
- * Processes and outputs information about a soulbreak in RichEmbed format.
+/** sendMessageEmbedSoulbreak:
+ * Processes and outputs information about a soulbreak in MessageEmbed format.
  * @param {object} soulbreak: each value from lookupSoulbreak results.
  * @param {object} msg: Discord.js-commando message object.
  * @param {boolean} dm: whether to DM the user.
  * @param {string} sbType: the SB to filter and display.
  * @return {object} Promise
  **/
-function sendRichEmbedSoulbreak(soulbreak, msg, dm=false, sbType='all') {
+function sendMessageEmbedSoulbreak(soulbreak, msg, dm=false, sbType='all') {
   let embeds = [];
   let name = soulbreak.name;
   let description = botUtils.returnDescription(soulbreak);
@@ -349,7 +349,7 @@ function sendRichEmbedSoulbreak(soulbreak, msg, dm=false, sbType='all') {
   let target = soulbreak.target;
   let sbTier = soulbreak.tier;
   let sbImage = botUtils.returnImageLink(soulbreak, 'soulstrike');
-  let embed = new RichEmbed()
+  let embed = new MessageEmbed()
     .setTitle(title)
     .setDescription(description)
     .setColor('#53ddff')
@@ -368,31 +368,32 @@ function sendRichEmbedSoulbreak(soulbreak, msg, dm=false, sbType='all') {
     let bsbQueryResults = searchBsbCommands(name);
     bsbQueryResults.then( (bsbCommands) => {
       bsbCommands.value.forEach( (bsbCommand) => {
-          embed = processRichEmbedBsb(bsbCommand, embed);
+          embed = processMessageEmbedBsb(bsbCommand, embed);
           embeds.push({embed});
       });
     }).catch( (error) => {
-      console.log(`Error processing RichEmbed BSB, error ${error}`);
+      console.log(`Error processing MessageEmbed BSB, error ${error}`);
     });
   };
   return new Promise( (resolve, reject) => {
     try {
       resolve(embeds);
     } catch (err) {
-      console.log(`Error in sendRichEmbedSoulbreak, error: ${err}`);
+      console.log(`Error in sendMessageEmbedSoulbreak, error: ${err}`);
       reject(err);
     };
   });
 };
 
-/** processRichEmbedBsb:
+
+/** processMessageEmbedBsb:
  * Adds BSB commands to an embed message.
  * @param {object} bsbCommand: a JSON dict for a BSB command.
- * @return {object} embed: a RichEmbed() message.
+ * @return {object} embed: a MessageEmbed() message.
  **/
-function processRichEmbedBsb(bsbCommand) {
+function processMessageEmbedBsb(bsbCommand) {
   let command = bsbCommand.name;
-  console.log(`Command ${command} found for processRichEmbedBsb.`);
+  console.log(`Command ${command} found for processMessageEmbedBsb.`);
   let target = bsbCommand.target;
   let source = bsbCommand.source;
   let description = botUtils.returnDescription(bsbCommand);
@@ -402,7 +403,7 @@ function processRichEmbedBsb(bsbCommand) {
   let sbImage = botUtils.returnImageLink(bsbCommand, 'ability');
   let type = bsbCommand.school;
   let multiplier = botUtils.returnMultiplier(bsbCommand);
-  let embed = new RichEmbed()
+  let embed = new MessageEmbed()
     .setTitle(util.format('**%s BSB Command: %s**', source, command))
     .setDescription(description)
     .setColor('#ea9f3c')
@@ -578,7 +579,7 @@ function processBsb(bsbCommand, message=null, sbType='all') {
 };
 
 module.exports = {
-  sendSoulbreakRichEmbedSummary: sendSoulbreakRichEmbedSummary,
+  sendSoulbreakMessageEmbedSummary: sendSoulbreakMessageEmbedSummary,
   soulbreak: lookupSoulbreak,
   searchSoulbreak: searchSoulbreak,
   sendSoulbreakPlaintextSummary: sendSoulbreakPlaintextSummary,

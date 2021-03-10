@@ -1,5 +1,5 @@
 const util = require('util');
-const {RichEmbed} = require('discord.js');
+const {MessageEmbed} = require('discord.js');
 const jsonQuery = require('json-query');
 const titlecase = require('titlecase');
 const escapeStringRegexp = require('escape-string-regexp');
@@ -136,7 +136,7 @@ function lookupBrave(msg, character, braveLevel) {
         values.push(value);
       });
       values.forEach( (value) => {
-        sendRichEmbedBrave(value, msg).then( (result) => {
+        sendMessageEmbedBrave(value, msg).then( (result) => {
           result.forEach( (embed) => {
             msg.channel.send(embed)
               .then( (res) => {
@@ -151,13 +151,13 @@ function lookupBrave(msg, character, braveLevel) {
   });
 }
 
-/** sendRichEmbedBrave:
+/** sendMessageEmbedBrave:
   * Processes and outputs information about a brave command.
   * @param {object} value: each value from lookupBrave results.
   * @param {object} msg: Discord.js-command message object.
   * @return {object} Promise
   */
-function sendRichEmbedBrave(value, msg) {
+function sendMessageEmbedBrave(value, msg) {
   let embeds = [];
   let name = value.name;
   let description = botUtils.returnDescription(value);
@@ -170,7 +170,7 @@ function sendRichEmbedBrave(value, msg) {
   let level = value.brave;
   let image = botUtils.returnBraveImage(level);
   let title = `${name}: Level ${level}`;
-  let embed = new RichEmbed()
+  let embed = new MessageEmbed()
     .setTitle(title)
     .setDescription(description)
     .setColor('#43ddff')
@@ -186,7 +186,7 @@ function sendRichEmbedBrave(value, msg) {
     try {
       resolve(embeds);
     } catch (err) {
-      console.log(`Error in sendRichEmbedBrave: ${err}`);
+      console.log(`Error in sendMessageEmbedBrave: ${err}`);
       reject(err);
     };
   });
