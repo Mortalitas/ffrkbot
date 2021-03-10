@@ -4,6 +4,8 @@ gsjson 1f8OJIQhpycljDQ8QNDk_va1GJ1u7RVoMaNjFcHH0LKk -w "Record Materia" -b enlir
 echo "RM done"
 gsjson 1f8OJIQhpycljDQ8QNDk_va1GJ1u7RVoMaNjFcHH0LKk -w "Soul Breaks" -b enlir_json/soulbreaks.json
 echo "SB done"
+gsjson 1f8OJIQhpycljDQ8QNDk_va1GJ1u7RVoMaNjFcHH0LKk -w "Limit Breaks" -b enlir_json/limitbreaks.json
+echo "LBO and LBG done"
 gsjson 1f8OJIQhpycljDQ8QNDk_va1GJ1u7RVoMaNjFcHH0LKk -w "Status" -b enlir_json/status.json
 echo "status done"
 gsjson 1f8OJIQhpycljDQ8QNDk_va1GJ1u7RVoMaNjFcHH0LKk -w "Abilities" -b enlir_json/abilities.json
